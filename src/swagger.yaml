@@ -1,0 +1,912 @@
+openapi: 3.0.0
+info:
+  title: User API
+  description: User authentication and management
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+tags:
+  - name: Users
+    description: User authentication and management
+  - name: Company
+    description: Company management
+  - name: Store
+    description: Store management
+
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      description: Create a new user account by providing name, email, and password.
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Aditya Ranjan"
+                email:
+                  type: string
+                  format: email
+                  example: "aditya@gmail.com"
+                password:
+                  type: string
+                  format: password
+                  example: "Password@123"
+      responses:
+        "201":
+          description: User registered successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User registered successfully
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "Aditya Ranjan"
+                      email:
+                        type: string
+                        example: "aditya@gmail.com"
+        "400":
+          description: Invalid input or missing fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Email already exists or missing required fields
+        "500":
+          description: Internal server error
+
+  /users/login:
+    post:
+      summary: Login a user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+
+  /users/refresh-token:
+    post:
+      summary: Refresh access token
+      tags: [Users]
+      responses:
+        "200":
+          description: Token refreshed
+
+  /users/verify-email/{verificationToken}:
+    get:
+      summary: Verify user's email
+      tags: [Users]
+      parameters:
+        - in: path
+          name: verificationToken
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified
+
+  /users/forgot-password:
+    post:
+      summary: Request password reset
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Reset email sent
+
+  /users/reset-password/{resetToken}:
+    post:
+      summary: Reset forgotten password
+      tags: [Users]
+      parameters:
+        - in: path
+          name: resetToken
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password reset successful
+
+  /users/logout:
+    get:
+      summary: Logout user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+
+  /users/current-user:
+    get:
+      summary: Get current logged-in user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Returns current user
+
+  /users/get-user:
+    get:
+      summary: Get all users
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successfully fetched all users
+
+  /users/get-user-based-on-company:
+    post:
+      summary: Get users by company
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: string
+      responses:
+        "200":
+          description: Users fetched successfully based on company
+
+  /users/change-password:
+    post:
+      summary: Change current user's password
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed successfully
+
+  /users/change-password-directly/{userId}:
+    post:
+      summary: Directly change password for a user (admin use)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed successfully
+
+  /users/resend-email-verification:
+    post:
+      summary: Resend email verification link
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Verification email sent
+
+  /users/register-user-staff:
+    post:
+      summary: Register a staff user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+      responses:
+        "201":
+          description: Staff user registered successfully
+
+  /users/assign-role/{userId}:
+    post:
+      summary: Assign a role to a user (admin only)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [ADMIN, STAFF, USER]
+      responses:
+        "200":
+          description: Role assigned successfully
+
+  /company:
+    post:
+      summary: Ceate Company
+      description: Create a new Company
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "XYZ"
+
+      responses:
+        "201":
+          description: Company created  successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User registered successfully
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "XYZ"
+
+        "400":
+          description: Invalid input or missing fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Company already exists or missing required fields
+        "500":
+          description: Internal server error
+
+    get:
+      summary: Get all company
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successfully fetched all company
+
+  /company/{companyId}:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        description: The ID of the company
+        schema:
+          type: string
+
+    get:
+      summary: Get Company by ID
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successfully fetched company
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  company:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "XYZ"
+        "404":
+          description: Company not found
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Update Company
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Company Name"
+      responses:
+        "200":
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  company:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "Updated Company Name"
+        "400":
+          description: Invalid input
+        "403":
+          description: Unauthorized (Admin access required)
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete Company
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Company deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Company deleted
+        "403":
+          description: Unauthorized (Admin access required)
+        "404":
+          description: Company not found
+        "500":
+          description: Internal server error
+
+  /update-company-logo/{companyId}:
+    patch:
+      summary: Update Company Logo
+      description: Upload a new logo image and update the company logo
+      tags: [Company]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the company to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - logo
+              properties:
+                logo:
+                  type: string
+                  format: binary
+                  description: The new logo image file
+
+      responses:
+        "200":
+          description: Logo updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "661fdd289cd1e50d62b0e379"
+                      name:
+                        type: string
+                        example: "XYZ Company"
+                      logo:
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                            example: "http://localhost:5000/static/xyz.png"
+                          localPath:
+                            type: string
+                            example: "public/uploads/xyz.png"
+                  message:
+                    type: string
+                    example: Logo updated successfully
+
+        "400":
+          description: No logo file provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 400
+                  message:
+                    type: string
+                    example: Logo image is required
+
+        "403":
+          description: Unauthorized or forbidden
+        "404":
+          description: Company not found
+        "500":
+          description: Internal server error
+
+  /store:
+    post:
+      summary: Create Store
+      description: Create a new store.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - company
+              properties:
+                name:
+                  type: string
+                  example: "Store A"
+                company:
+                  type: string
+                  description: Company ID
+                  example: "6412d91f6e7a5e3c3a123abc"
+      responses:
+        "201":
+          description: Store created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  store:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "Store A"
+                      company:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+        "400":
+          description: Invalid input or missing required fields.
+        "500":
+          description: Internal server error.
+
+    get:
+      summary: Get All Stores
+      description: Retrieve a paginated list of all stores.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: number
+          description: Page number for pagination.
+        - name: limit
+          in: query
+          schema:
+            type: number
+          description: Number of items per page.
+      responses:
+        "200":
+          description: Stores fetched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  stores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "6412d91f6e7a5e3c3a123abc"
+                        name:
+                          type: string
+                          example: "Store A"
+                        company:
+                          type: string
+                          example: "6412d91f6e7a5e3c3a123abc"
+                  totalStores:
+                    type: number
+                    example: 50
+        "500":
+          description: Internal server error.
+
+  /store/{storeId}:
+    parameters:
+      - name: storeId
+        in: path
+        required: true
+        description: The ID of the store.
+        schema:
+          type: string
+    patch:
+      summary: Update Store
+      description: Update store details such as name and company.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Store Name"
+                company:
+                  type: string
+                  example: "6412d91f6e7a5e3c3a123abc"
+      responses:
+        "201":
+          description: Store updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  store:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "Updated Store Name"
+                      company:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+        "404":
+          description: Store not found or Store Id is required.
+        "500":
+          description: Internal server error.
+
+    get:
+      summary: Get Store by ID
+      description: Retrieve details of a specific store.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Store fetched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  store:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      name:
+                        type: string
+                        example: "Store A"
+                      company:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+        "404":
+          description: Store not found.
+        "500":
+          description: Internal server error.
+
+    delete:
+      summary: Delete Store
+      description: Delete a store by its ID.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Store deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Store Deleted Successfully"
+        "404":
+          description: Store not found or Store Id is required.
+        "500":
+          description: Internal server error.
+
+  /store/update-store-logo/{storeId}:
+    parameters:
+      - name: storeId
+        in: path
+        required: true
+        description: The ID of the store.
+        schema:
+          type: string
+    patch:
+      summary: Update Store Logo
+      description: Upload a new logo image file to update the store logo.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - logo
+              properties:
+                logo:
+                  type: string
+                  format: binary
+                  description: The new logo image file.
+      responses:
+        "200":
+          description: Logo updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  updatedLogo:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6412d91f6e7a5e3c3a123abc"
+                      logo:
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                            example: "https://example.com/uploads/logo.png"
+                          localPath:
+                            type: string
+                            example: "uploads/logo.png"
+                  message:
+                    type: string
+                    example: "Logo updated successfully"
+        "400":
+          description: Logo image is required.
+        "404":
+          description: Store not found.
+        "500":
+          description: Internal server error.
+
+  /store/get-store-based-on-company:
+    post:
+      summary: Get Stores Based on Company
+      description: Retrieve stores for a given company ID. If no companyId is provided in the body, it defaults to the user's company.
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: string
+                  description: "ID of the company"
+                  example: "6412d91f6e7a5e3c3a123abc"
+      responses:
+        "200":
+          description: Stores fetched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  stores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "6412d91f6e7a5e3c3a123abc"
+                        name:
+                          type: string
+                          example: "Store A"
+                        company:
+                          type: string
+                          example: "6412d91f6e7a5e3c3a123abc"
+                  message:
+                    type: string
+                    example: "Stores fetched successfully"
+        "409":
+          description: Please select the Company.
+        "500":
+          description: Internal server error.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
