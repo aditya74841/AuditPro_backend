@@ -1,14 +1,11 @@
-import { Router } from "express";
+import { Router } from "express"
 
-import { UserRolesEnum } from "../constants.js";
-import {
-  verifyJWT,
-  verifyPermission,
-} from "../middlewares/auth.middlewares.js";
+import { UserRolesEnum } from "../constants.js"
+import { verifyJWT, verifyPermission } from "../middlewares/auth.middlewares.js"
 
-import { validate } from "../validators/validate.js";
-import { upload } from "../middlewares/multer.middlewares.js";
-import { mongoIdPathVariableValidator } from "../validators/common/mongodb.validators.js";
+import { validate } from "../validators/validate.js"
+import { upload } from "../middlewares/multer.middlewares.js"
+import { mongoIdPathVariableValidator } from "../validators/common/mongodb.validators.js"
 
 import {
   createAuditQuestionName,
@@ -24,7 +21,7 @@ import {
   assignAuditToStaff,
   getQuestionBasedonStaff,
   startAudting,
-} from "../controllers/audit/auditquestion.controller.js";
+} from "../controllers/audit/auditquestion.controller.js"
 import {
   createCompany,
   updateCompany,
@@ -32,25 +29,28 @@ import {
   getCompanyById,
   deleteCompany,
   updateCompanyLogo,
-} from "../controllers/company.controller.js";
+  getCompaniesForUser,
+} from "../controllers/company.controller.js"
 
-const router = Router();
-router.use(verifyJWT);
+const router = Router()
+router.use(verifyJWT)
 
 router
   .route("/")
-  .post(
-    verifyJWT,
-    verifyPermission([UserRolesEnum.ADMIN]),
-    createCompany
-  )
-  .get(verifyJWT, getCompany);
+  .post(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), createCompany)
+  .get(verifyJWT, getCompany)
+
+  router
+  .route("/get-company-name")
+  .get(verifyJWT, getCompaniesForUser);
+
+
 
 router
   .route("/:companyId")
   .patch(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), updateCompany)
   .get(verifyJWT, getCompanyById)
-  .delete(verifyJWT, deleteCompany);
+  .delete(verifyJWT, deleteCompany)
 router
   .route("/update-company-logo/:companyId")
   .patch(
@@ -58,6 +58,6 @@ router
     upload.single("logo"),
     verifyPermission([UserRolesEnum.ADMIN]),
     updateCompanyLogo
-  );
+  )
 
-export default router;
+export default router

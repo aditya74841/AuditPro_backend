@@ -72,12 +72,7 @@ const getStore = asyncHandler(async (req, res) => {
   // if (store.length == 0) {
   //   throw new ApiError(500, "No store found");
   // }
-  
-  for (let i = 1; i <= 10; i++) {
-    if (i === 7) break;
 
-    console.log(i);
-  }
 
   const { page = 1, limit = 10 } = req.query;
   const storeAggregate = Store.aggregate([{ $match: {} }]);
