@@ -1,49 +1,53 @@
-import crypto from "crypto";
-import jwt from "jsonwebtoken";
-import { UserLoginType, UserRolesEnum } from "../constants.js";
-import { User } from "../models/user.model.js";
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
+import crypto from "crypto"
+import jwt from "jsonwebtoken"
+import { UserLoginType, UserRolesEnum } from "../constants.js"
+import { User } from "../models/user.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
 import {
   getLocalPath,
   getMongoosePaginationOptions,
   getStaticFilePath,
   removeLocalFile,
-} from "../utils/helpers.js";
+} from "../utils/helpers.js"
 
-import { Store } from "../models/store.model.js";
-import mongoose from "mongoose";
+import { Store } from "../models/store.model.js"
+import mongoose from "mongoose"
 
 const createStore = asyncHandler(async (req, res) => {
-  const { name, company } = req.body;
+  const { name, company } = req.body
   if (!name) {
-    throw new ApiError(404, "Store Name is required");
+    throw new ApiError(404, "Store Name is required")
   }
   if (!company) {
-    throw new ApiError(404, "Company is required");
+    throw new ApiError(404, "Company is required")
   }
 
   const store = await Store.create({
     name,
     company,
     createdBy: req.user._id,
-  });
+  })
 
   if (!store) {
-    throw new ApiError(500, "Something went Wrong while creating a new store");
+    throw new ApiError(500, "Something went Wrong while creating a new store")
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, store, "Store created successfully"));
-});
+    .json(new ApiResponse(201, store, "Store created successfully"))
+})
 
 const updateStore = asyncHandler(async (req, res) => {
-  const { storeId } = req.params;
-  const { name, company } = req.body;
+  const { storeId } = req.params
+  const { name, company } = req.body
+
+  console.log("The StoreId is ", storeId)
+  console.log("The name and Company is ", name, company)
+
   if (!name) {
-    throw new ApiError(404, "Store Name is required");
+    throw new ApiError(404, "Store Name is required")
   }
 
   const store = await Store.findByIdAndUpdate(
@@ -56,16 +60,16 @@ const updateStore = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  );
+  )
 
   if (!store) {
-    throw new ApiError(500, "Something went Wrong while updating  store");
+    throw new ApiError(500, "Something went Wrong while updating  store")
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, store, "Store updated successfully"));
-});
+    .json(new ApiResponse(201, store, "Store updated successfully"))
+})
 
 const getStore = asyncHandler(async (req, res) => {
   // const store = await Store.find();
@@ -73,9 +77,8 @@ const getStore = asyncHandler(async (req, res) => {
   //   throw new ApiError(500, "No store found");
   // }
 
-
-  const { page = 1, limit = 10 } = req.query;
-  const storeAggregate = Store.aggregate([{ $match: {} }]);
+  const { page = 1, limit = 10 } = req.query
+  const storeAggregate = Store.aggregate([{ $match: {} }])
 
   // console.log("The Store Aggregate is ", storeAggregate);
 
@@ -89,26 +92,62 @@ const getStore = asyncHandler(async (req, res) => {
         docs: "stores",
       },
     })
-  );
+  )
 
   return res
     .status(200)
-    .json(new ApiResponse(200, stores, "Stores Fetched Successfully"));
-});
+    .json(new ApiResponse(200, stores, "Stores Fetched Successfully"))
+})
 
 const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
   const { companyId = req.user.companyId } = req.body;
   const { page = 1, limit = 10 } = req.query;
 
   if (!companyId) {
-    throw new ApiError(409, "Please Select the Company", []);
+    throw new ApiError(409, "Please select the company", []);
   }
 
   const storeAggregate = Store.aggregate([
-    { $match: { company: new mongoose.Types.ObjectId(companyId) } },
+    {
+      $match: {
+        company: new mongoose.Types.ObjectId(companyId),
+      },
+    },
+    {
+      $lookup: {
+        from: "companies",
+        localField: "company",
+        foreignField: "_id",
+        as: "company",
+      },
+    },
+    { $unwind: "$company" },
+    {
+      $lookup: {
+        from: "users",
+        localField: "createdBy",
+        foreignField: "_id",
+        as: "createdBy",
+      },
+    },
+    {
+      $unwind: {
+        path: "$createdBy",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        logo: 1,
+        company: "$company.name",       // show company name
+        createdBy: "$createdBy.name",   // show user name
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
   ]);
 
-  // console.log(companyAggregate);
   const paginatedOptions = await Store.aggregatePaginate(
     storeAggregate,
     getMongoosePaginationOptions({
@@ -123,10 +162,9 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, paginatedOptions, "Stores fetched successfully")
-    );
+    .json(new ApiResponse(200, paginatedOptions, "Stores fetched successfully"));
 });
+
 
 // const getStore = asyncHandler(async (req, res) => {
 //   const { page = 1, limit = 10 } = req.query;
@@ -161,56 +199,60 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
 //   }
 // });
 const getStoreById = asyncHandler(async (req, res) => {
-  const { storeId } = req.params;
+  const { storeId } = req.params
   if (!storeId) {
-    throw new ApiError(404, "Store Id is required");
+    throw new ApiError(404, "Store Id is required")
   }
 
-  const store = await Store.findById(storeId);
+  const store = await Store.findById(storeId)
   if (!store) {
-    throw new ApiError(500, "No store found");
+    throw new ApiError(500, "No store found")
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, store, "Store Fetched By Id Successfully"));
-});
+    .json(new ApiResponse(200, store, "Store Fetched By Id Successfully"))
+})
 
 const deleteStore = asyncHandler(async (req, res) => {
-  const { storeId } = req.params;
+  const { storeId } = req.params
   if (!storeId) {
-    throw new ApiError(404, "Store Id is required");
+    throw new ApiError(404, "Store Id is required")
   }
 
-  const store = await Store.findById(storeId);
+  const store = await Store.findById(storeId)
   if (!store) {
-    throw new ApiError(500, "No store found");
+    throw new ApiError(500, "No store found")
   }
 
-  const deletedStore = await store.deleteOne();
+  const deletedStore = await store.deleteOne()
 
   if (!deletedStore) {
-    throw new ApiError(500, "Something went worng while deleting store");
+    throw new ApiError(500, "Something went worng while deleting store")
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, deletedStore, "Store Deleted Successfully"));
-});
+    .json(new ApiResponse(201, deletedStore, "Store Deleted Successfully"))
+})
 
 const updateStoreLogo = asyncHandler(async (req, res) => {
   // Check if user has uploaded an avatar
-  const { storeId } = req.params;
+  const { storeId } = req.params
+  console.log("checking the logo Url ")
 
   if (!req.file?.filename) {
-    throw new ApiError(400, "Logo image is required");
+    throw new ApiError(400, "Logo image is required")
   }
 
   // get avatar file system url and local path
-  const logoUrl = getStaticFilePath(req, req.file?.filename);
-  const logoLocalPath = getLocalPath(req.file?.filename);
+  const logoUrl = getStaticFilePath(req, req.file?.filename)
+  const logoLocalPath = getLocalPath(req.file?.filename)
 
-  const store = await Store.findById(storeId);
+  const store = await Store.findById(storeId)
+
+
+
 
   let updatedLogo = await Store.findByIdAndUpdate(
     storeId,
@@ -225,15 +267,15 @@ const updateStoreLogo = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  );
+  )
 
   // remove the old avatar
-  removeLocalFile(store.logo.localPath);
+  removeLocalFile(store.logo.localPath)
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"));
-});
+    .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
+})
 export {
   createStore,
   updateStore,
@@ -242,4 +284,4 @@ export {
   deleteStore,
   updateStoreLogo,
   getStoreBasedOnCompany,
-};
+}

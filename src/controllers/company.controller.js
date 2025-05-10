@@ -172,29 +172,31 @@ const updateCompanyLogo = asyncHandler(async (req, res) => {
 
 const getCompaniesForUser = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-
   const user = await User.findById(userId);
 
   let companies;
 
   if (user && user.companyId) {
-    // Only if user has a companyId, then find that company
     const userCompany = await Company.findById(user.companyId).select("_id name");
 
     if (userCompany) {
-      companies = userCompany;
+      companies = [{ value: userCompany._id, label: userCompany.name }];
     } else {
       companies = [];
     }
   } else {
-    // If no companyId associated, return all companies
-    companies = await Company.find({}).select("_id name");
+    const allCompanies = await Company.find({}).select("_id name");
+    companies = allCompanies.map(company => ({
+      value: company._id,
+      label: company.name
+    }));
   }
 
   return res
     .status(200)
     .json(new ApiResponse(200, companies, "Companies fetched successfully"));
 });
+
 
 
 export {
