@@ -1,14 +1,11 @@
-import { Router } from "express";
+import { Router } from "express"
 
-import { UserRolesEnum } from "../constants.js";
-import {
-  verifyJWT,
-  verifyPermission,
-} from "../middlewares/auth.middlewares.js";
+import { UserRolesEnum } from "../constants.js"
+import { verifyJWT, verifyPermission } from "../middlewares/auth.middlewares.js"
 
-import { validate } from "../validators/validate.js";
-import { upload } from "../middlewares/multer.middlewares.js";
-import { mongoIdPathVariableValidator } from "../validators/common/mongodb.validators.js";
+import { validate } from "../validators/validate.js"
+import { upload } from "../middlewares/multer.middlewares.js"
+import { mongoIdPathVariableValidator } from "../validators/common/mongodb.validators.js"
 
 import {
   createStore,
@@ -18,21 +15,28 @@ import {
   deleteStore,
   updateStoreLogo,
   getStoreBasedOnCompany,
-} from "../controllers/store.controller.js";
+  getStoreName,
+} from "../controllers/store.controller.js"
 
-const router = Router();
-router.use(verifyJWT);
+const router = Router()
+router.use(verifyJWT)
+
+router
+  .route("/get-store-based-on-company")
+  .post(verifyJWT, getStoreBasedOnCompany)
+
+router.route("/getStoreName").get(verifyJWT, getStoreName)
 
 router
   .route("/")
   .post(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), createStore)
-  .get(verifyJWT, getStore);
+  .get(verifyJWT, getStore)
 
 router
   .route("/:storeId")
   .patch(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), updateStore)
   .get(verifyJWT, getStoreById)
-  .delete(verifyJWT, deleteStore);
+  .delete(verifyJWT, deleteStore)
 router
   .route("/update-store-logo/:storeId")
   .patch(
@@ -40,9 +44,6 @@ router
     upload.single("logo"),
     verifyPermission([UserRolesEnum.ADMIN]),
     updateStoreLogo
-  );
-router
-  .route("/get-store-based-on-company")
-  .post(verifyJWT, getStoreBasedOnCompany);
+  )
 
-export default router;
+export default router

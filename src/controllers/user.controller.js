@@ -117,8 +117,8 @@ const registerUserStaff = asyncHandler(async (req, res) => {
   } = req.body
   let randomPassword
 
-  console.log(name, email, password, companyId, phoneNumber)
-  console.log("checking Line 1")
+  // console.log(name, email, password, companyId, phoneNumber)
+  // console.log("checking Line 1")
   // Generate random password if password is null
   if (!password) {
     randomPassword = generateRandomPassword()
@@ -131,7 +131,7 @@ const registerUserStaff = asyncHandler(async (req, res) => {
     }
     companyId = user.companyId
   }
-  console.log("checking Line 2")
+  // console.log("checking Line 2")
 
   // console.log("randomPassword", randomPassword);
   const existedUser = await User.findOne({
@@ -152,7 +152,7 @@ const registerUserStaff = asyncHandler(async (req, res) => {
   // }
 
   // Create user
-  console.log("checking Line 3")
+  // console.log("checking Line 3")
 
   const user = await User.create({
     name,
@@ -287,10 +287,6 @@ const getUserBasedOnCompany = asyncHandler(async (req, res) => {
   const { companyId = req.user.companyId } = req.body
   const { page = 1, limit = 10 } = req.query
 
-  // console.log(
-  //   " This is from getUserBasedOnCompany The Company Id is",
-  //   companyId
-  // )
 
   if (!companyId) {
     throw new ApiError(409, "Please Select the Company", [])
@@ -345,6 +341,7 @@ const getUser = asyncHandler(async (req, res) => {
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
+  console.log(req.user._id)
   await User.findByIdAndUpdate(
     req.user._id,
     {

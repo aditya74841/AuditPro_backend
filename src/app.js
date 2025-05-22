@@ -47,13 +47,27 @@ app.use(cookieParser());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const file = fs.readFileSync(path.resolve(__dirname, "./swagger.yaml"), "utf8");
-const swaggerDocument = YAML.parse(
-  file?.replace(
-    "- url: ${{server}}",
-    `- url: ${process.env.FREEAPI_HOST_URL || "http://localhost:8080"}/api/v1`
-  )
-);
+// const file = fs.readFileSync(path.resolve(__dirname, "./swagger.yaml"), "utf8");
+
+
+// const swaggerDocument = YAML.parse(
+//   file?.replace(
+//     "- url: ${{server}}",
+//     `- url: ${process.env.FREEAPI_HOST_URL || "http://localhost:8080"}/api/v1`
+//   )
+// );
+
+
+const swaggerDocument = YAML.load(path.resolve(__dirname, "./swagger.yaml"));
+
+// Optional dynamic base URL replace
+swaggerDocument.servers = [
+  {
+    url: process.env.FREEAPI_HOST_URL || "http://localhost:8080/api/v1",
+  },
+];
+
+
 
 // const swaggerDocument = YAML.load("./docs/swagger.yaml");
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

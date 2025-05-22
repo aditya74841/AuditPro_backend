@@ -43,8 +43,8 @@ const updateStore = asyncHandler(async (req, res) => {
   const { storeId } = req.params
   const { name, company } = req.body
 
-  console.log("The StoreId is ", storeId)
-  console.log("The name and Company is ", name, company)
+  // console.log("The StoreId is ", storeId)
+  // console.log("The name and Company is ", name, company)
 
   if (!name) {
     throw new ApiError(404, "Store Name is required")
@@ -100,11 +100,11 @@ const getStore = asyncHandler(async (req, res) => {
 })
 
 const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
-  const { companyId = req.user.companyId } = req.body;
-  const { page = 1, limit = 10 } = req.query;
+  const { companyId = req.user.companyId } = req.body
+  const { page = 1, limit = 10 } = req.query
 
   if (!companyId) {
-    throw new ApiError(409, "Please select the company", []);
+    throw new ApiError(409, "Please select the company", [])
   }
 
   const storeAggregate = Store.aggregate([
@@ -140,13 +140,14 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
       $project: {
         name: 1,
         logo: 1,
-        company: "$company.name",       // show company name
-        createdBy: "$createdBy.name",   // show user name
+        company: "$company._id", // show company name
+        companyName: "$company.name",
+        createdBy: "$createdBy.name", // show user name
         createdAt: 1,
         updatedAt: 1,
       },
     },
-  ]);
+  ])
 
   const paginatedOptions = await Store.aggregatePaginate(
     storeAggregate,
@@ -158,13 +159,12 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
         docs: "stores",
       },
     })
-  );
+  )
 
   return res
     .status(200)
-    .json(new ApiResponse(200, paginatedOptions, "Stores fetched successfully"));
-});
-
+    .json(new ApiResponse(200, paginatedOptions, "Stores fetched successfully"))
+})
 
 // const getStore = asyncHandler(async (req, res) => {
 //   const { page = 1, limit = 10 } = req.query;
@@ -251,9 +251,6 @@ const updateStoreLogo = asyncHandler(async (req, res) => {
 
   const store = await Store.findById(storeId)
 
-
-
-
   let updatedLogo = await Store.findByIdAndUpdate(
     storeId,
 
@@ -276,6 +273,26 @@ const updateStoreLogo = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
 })
+
+const getStoreName = asyncHandler(async (req, res) => {
+  const companyId = req.user?.companyId;
+
+  if (!companyId) {
+    throw new ApiError(409, "Please select the company", []);
+  }
+
+  const stores = await Store.find({ company: companyId }).select("_id name");
+
+  const formattedStores = stores.map((store) => ({
+    value: store._id,
+    label: store.name,
+  }));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, formattedStores, "Stores fetched successfully"));
+})
+
 export {
   createStore,
   updateStore,
@@ -284,4 +301,5 @@ export {
   deleteStore,
   updateStoreLogo,
   getStoreBasedOnCompany,
+  getStoreName,
 }

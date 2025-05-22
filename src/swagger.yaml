@@ -12,7 +12,8 @@ tags:
     description: Company management
   - name: Store
     description: Store management
-
+  - name: Audit
+    description: Audit management
 paths:
   /users/register:
     post:
@@ -903,6 +904,271 @@ paths:
           description: Please select the Company.
         "500":
           description: Internal server error.
+
+
+  /master/create-audit-question-name:
+    post:
+      summary: Create a new audit question name
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Audit question name created successfully
+        "403":
+          description: Unauthorized (Admin access required)
+        "500":
+          description: Internal server error
+  /master/update-audit-question-name/{auditQuestionId}:
+    patch:
+      summary: Update audit question name
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit question name updated
+        "403":
+          description: Unauthorized (Admin access required)
+  /master/delete-audit-question-name/{auditQuestionId}:
+    delete:
+      summary: Delete audit question name
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit question name deleted
+        "403":
+          description: Unauthorized (Admin access required)
+
+  /master/get-audit-question:
+    get:
+      summary: Get all audit questions
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of audit questions
+
+  /master/get-audit-question-by-store:
+    post:
+      summary: Get audit questions based on store
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                storeId:
+                  type: string
+      responses:
+        "200":
+          description: Audit questions for store
+
+  /master/get-audit-question-name-by-id/{auditQuestionId}:
+    get:
+      summary: Get audit question name by ID
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit question name data
+
+  /master/create-audit-option/{auditQuestionId}:
+    post:
+      summary: Create audit options
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Audit option created
+
+  /master/update-audit-option/{auditQuestionId}/{optionId}:
+    patch:
+      summary: Update audit option
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: optionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit option updated
+
+    delete:
+      summary: Delete audit option
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: optionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit option deleted
+
+  /master/assign-audit-to-staff/{auditQuestionId}:
+    post:
+      summary: Assign audit to staff
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit assigned to staff
+
+  /master/get-audit-to-staff:
+    get:
+      summary: Get audit assigned to staff
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audit data fetched for staff
+
+  /master/get-audit-option/{auditQuestionId}:
+    get:
+      summary: Get audit options for a question
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Options retrieved
+
+  /master/start-auditing/{auditQuestionId}:
+    get:
+      summary: Start auditing
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: auditQuestionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit started
+
+  /master/audit-response:
+    post:
+      summary: Submit audit response
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                video:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Audit response submitted
+
+  /master/get-audit-response:
+    get:
+      summary: Get all audit responses
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audit responses fetched
+
+  /master/audit-response/{responseId}:
+    get:
+      summary: Get audit response by ID
+      tags: [Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: responseId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit response fetched
 
 components:
   securitySchemes:
