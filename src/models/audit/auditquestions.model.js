@@ -71,6 +71,12 @@ const auditQuestionsSchema = new Schema(
       ref: "Store",
       default: null,
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+      required: [true, "Company is required"],
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",

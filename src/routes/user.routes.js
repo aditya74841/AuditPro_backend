@@ -31,6 +31,7 @@ import {
   registerUserStaff,
   resendEmailVerification,
   resetForgottenPassword,
+  updateUser,
   updateUserAvatar,
   verifyEmail,
 } from "../controllers/user.controller.js";
@@ -108,6 +109,19 @@ router
 
 
 router.route("/register-user-staff").post(verifyJWT, registerUserStaff);
+
+
+
+router
+  .route("/update-user/:userId")
+  .patch(
+    verifyJWT,
+    verifyPermission([UserRolesEnum.ADMIN]),
+    mongoIdPathVariableValidator("userId"),
+    userAssignRoleValidator(),
+    validate,
+    updateUser
+  );
 
 
 router

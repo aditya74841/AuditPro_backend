@@ -8,11 +8,12 @@ import { getMongoosePaginationOptions } from "../../utils/helpers.js"
 const createAuditQuestionName = asyncHandler(async (req, res) => {
   const { name, storeId } = req.body
   // console.log("checking", name);
-  if (!name) {
-    throw new ApiError(404, "Name is required")
+  if (!name && !companyId) {
+    throw new ApiError(404, "Name and Company is required")
   }
-
-
+  if (!req.user.companyId) {
+    throw new ApiError(404, "You are not allowed")
+  }
   if (!storeId) {
     if (!req.user.storeId) {
       throw new ApiError(404, "Store id is required")
@@ -22,6 +23,7 @@ const createAuditQuestionName = asyncHandler(async (req, res) => {
   const question = await AuditQuestion.create({
     name,
     store: req.user.storeId || storeId,
+    company: req.user.companyId,
     createdBy: req.user._id,
   })
 
@@ -37,12 +39,110 @@ const createAuditQuestionName = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, question, "Audit Question created successfully"))
 })
 
+// const getAuditQuestion = asyncHandler(async (req, res) => {
+
+//   const { page = 1, limit = 10 } = req.query
+//   const auditAggregate = AuditQuestion.aggregate([
+//     { $match: { company: req.user.companyId } },
+//   ])
+
+//   const audits = await AuditQuestion.aggregatePaginate(
+//     auditAggregate,
+//     getMongoosePaginationOptions({
+//       page,
+//       limit,
+//       customLabels: {
+//         totalDocs: "totalAuditQuestions",
+//         docs: "auditQuestions",
+//       },
+//     })
+//   )
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, audits, "Audit Question Fetched successfullyy"))
+// })
+
 const getAuditQuestion = asyncHandler(async (req, res) => {
-  // console.log("The Audit Question");
-  // const questions = await AuditQuestion.find({ store: req.user.storeId });
   const { page = 1, limit = 10 } = req.query
+
   const auditAggregate = AuditQuestion.aggregate([
-    { $match: { store: req.user.storeId } },
+    {
+      $match: { company: req.user.companyId },
+    },
+    {
+      $lookup: {
+        from: "stores",
+        localField: "store",
+        foreignField: "_id",
+        as: "storeDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$storeDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "companies",
+        localField: "company",
+        foreignField: "_id",
+        as: "companyDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$companyDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "createdBy",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$userDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "assignedTo",
+        foreignField: "_id",
+        as: "assignedUserDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$assignedUserDetails",
+        preserveNullAndEmptyArrays: true, // Will be null if not assigned
+      },
+    },
+    {
+      $addFields: {
+        storeName: "$storeDetails.name",
+        companyName: "$companyDetails.name",
+        creatorName: "$userDetails.name",
+        assignedToName: "$assignedUserDetails.name", // <- will be null if not assigned
+      },
+    },
+    {
+      $project: {
+        storeDetails: 0,
+        companyDetails: 0,
+        userDetails: 0,
+        assignedUserDetails: 0,
+      },
+    },
   ])
 
   const audits = await AuditQuestion.aggregatePaginate(
@@ -59,7 +159,7 @@ const getAuditQuestion = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, audits, "Audit Question Fetched successfullyy"))
+    .json(new ApiResponse(200, audits, "Audit Question Fetched successfully"))
 })
 
 const getAuditQuestionById = asyncHandler(async (req, res) => {
@@ -78,14 +178,15 @@ const getAuditQuestionById = asyncHandler(async (req, res) => {
 })
 
 const updateAuditQustionName = asyncHandler(async (req, res) => {
-  const { name, isPublished } = req.body
+  const { name, storeId, isPublished } = req.body
   if (!name) {
-    throw new ApiError(404, "Name is required")
+    throw new ApiError(404, "Name  is required")
   }
+
   const { auditQuestionId } = req.params
   const auditQuestion = await AuditQuestion.findByIdAndUpdate(
     auditQuestionId,
-    { $set: { name: name, isPublished: isPublished } },
+    { $set: { name: name, isPublished: isPublished, store: storeId } },
     { new: true }
   )
 
@@ -106,6 +207,10 @@ const updateAuditQustionName = asyncHandler(async (req, res) => {
 const deleteAuditQustionName = asyncHandler(async (req, res) => {
   const { auditQuestionId } = req.params
 
+  if (!auditQuestionId) {
+    throw new ApiError(404, "Audit question Id id required")
+  }
+
   // Find and delete the audit question by its ID
   const auditQuestion = await AuditQuestion.findByIdAndDelete(auditQuestionId)
 
@@ -119,7 +224,6 @@ const deleteAuditQustionName = asyncHandler(async (req, res) => {
       new ApiResponse(200, auditQuestion, "Audit Question deleted successfully")
     )
 })
-
 const createOptions = asyncHandler(async (req, res) => {
   const {
     question,
@@ -134,25 +238,35 @@ const createOptions = asyncHandler(async (req, res) => {
 
   const { auditQuestionId } = req.params
 
+  // Convert comma-separated string to array of { message }
+  let parsedOptions = []
+  if (typeof responseOption === "string" && responseOption.trim()) {
+    parsedOptions = responseOption
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((msg) => ({ message: msg }))
+  }
+
   const option = {
-    question: question,
-    responseType: responseType,
-    responseOption: responseOption,
-    isFile: isFile,
-    isVideo: isVideo,
-    isPhoto: isPhoto,
-    message: message,
-    score: score,
+    question,
+    responseType,
+    responseOption: parsedOptions,
+    isFile,
+    isVideo,
+    isPhoto,
+    message,
+    score,
   }
 
   const auditQuestion = await AuditQuestion.findByIdAndUpdate(
     auditQuestionId,
-    { $push: { options: option } }, // Assuming 'options' is the array field in your schema
+    { $push: { options: option } },
     { new: true, useFindAndModify: false }
   )
 
   if (!auditQuestion) {
-    throw new ApiError(500, "Something went Wrong while creating a new Option")
+    throw new ApiError(500, "Something went wrong while creating a new Option")
   }
 
   return res

@@ -287,7 +287,6 @@ const getUserBasedOnCompany = asyncHandler(async (req, res) => {
   const { companyId = req.user.companyId } = req.body
   const { page = 1, limit = 10 } = req.query
 
-
   if (!companyId) {
     throw new ApiError(409, "Please Select the Company", [])
   }
@@ -610,6 +609,26 @@ const assignRole = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Role changed for the user"))
 })
 
+const updateUser = asyncHandler(async (req, res) => {
+  console.log("The Update User")
+  const { userId } = req.params
+  const { name, email, phoneNumber } = req.body
+  const user = await User.findById(userId)
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist")
+  }
+  user.name = name
+  user.email = email
+  user.phoneNumber = phoneNumber
+  // user.password = user.password
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Role changed for the user"))
+})
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
@@ -745,4 +764,5 @@ export {
   handleSocialLogin,
   getUserBasedOnCompany,
   getUser,
+  updateUser,
 }
