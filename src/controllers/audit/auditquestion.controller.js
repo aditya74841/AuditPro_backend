@@ -177,6 +177,27 @@ const getAuditQuestionById = asyncHandler(async (req, res) => {
     )
 })
 
+
+const toggleIsPublished = asyncHandler(async (req, res) => {
+  const { auditQuestionId } = req.params;
+
+  // Find the audit question by ID
+  const auditQuestion = await AuditQuestion.findById(auditQuestionId);
+
+  if (!auditQuestion) {
+    throw new ApiError(404, "No Question found");
+  }
+
+  // Toggle the isPublished value
+  auditQuestion.isPublished = !auditQuestion.isPublished;
+
+  // Save the updated document
+  await auditQuestion.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, auditQuestion, "isPublished status toggled successfully")
+  );
+});
 const updateAuditQustionName = asyncHandler(async (req, res) => {
   const { name, storeId, isPublished } = req.body
   if (!name) {
@@ -237,6 +258,9 @@ const createOptions = asyncHandler(async (req, res) => {
   } = req.body
 
   const { auditQuestionId } = req.params
+
+
+  // console.log("The response options is ",responseOption )
 
   // Convert comma-separated string to array of { message }
   let parsedOptions = []
@@ -324,12 +348,12 @@ const getAuditResponse = asyncHandler(async (req, res) => {
   const optionsAggregate = AuditQuestion.aggregate([
     { $match: { _id: auditQuestion._id } },
     { $unwind: "$options" },
-    // {
-    //   $group: {
-    //     _id: "$_id",
-    //     options: { $push: "$options" },
-    //   },
-    // },
+    {
+      $group: {
+        _id: "$_id",
+        options: { $push: "$options" },
+      },
+    },
   ])
 
   const paginatedOptions = await AuditQuestion.aggregatePaginate(
@@ -369,6 +393,16 @@ const updateOptions = asyncHandler(async (req, res) => {
 
   const { auditQuestionId, optionId } = req.params
 
+
+  let parsedOptions = []
+  if (typeof responseOption === "string" && responseOption.trim()) {
+    parsedOptions = responseOption
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((msg) => ({ message: msg }))
+  }
+
   const auditQuestion = await AuditQuestion.findById(auditQuestionId)
 
   if (!auditQuestion) {
@@ -386,7 +420,7 @@ const updateOptions = asyncHandler(async (req, res) => {
   // Update the option fields
   option.question = question
   option.responseType = responseType
-  option.responseOption = responseOption
+  option.responseOption = parsedOptions
   option.isFile = isFile
   option.message = message
   option.score = score
@@ -520,4 +554,5 @@ export {
   assignAuditToStaff,
   getQuestionBasedonStaff,
   startAudting,
+  toggleIsPublished
 }
