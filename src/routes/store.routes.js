@@ -32,6 +32,10 @@ router
   .post(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), createStore)
   .get(verifyJWT, getStore)
 
+  // router
+  // .route("/delete-store:/storeId")
+  // .delete(verifyJWT, deleteStore)
+
 router
   .route("/:storeId")
   .patch(verifyJWT, verifyPermission([UserRolesEnum.ADMIN]), updateStore)

@@ -1,6 +1,5 @@
-import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
-
+import mongoose, { Schema } from "mongoose"
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"
 
 const companySchema = new Schema(
   {
@@ -10,14 +9,26 @@ const companySchema = new Schema(
       unique: [true, "Company Must be unique"],
       default: "",
     },
+    // logo: {
+    //   type: {
+    //     url: String,
+    //     localPath: String,
+    //   },
+    //   default: {
+    //     url: `https://via.placeholder.com/200x200.png`,
+    //     localPath: "",
+    //   },
+    // },
+
     logo: {
-      type: {
-        url: String,
-        localPath: String,
+      url: {
+        type: String,
+        required: true,
+        default: "https://via.placeholder.com/200x200.png",
       },
-      default: {
-        url: `https://via.placeholder.com/200x200.png`,
-        localPath: "",
+      public_id: {
+        type: String,
+        default: "", // This will be helpful for deletion from Cloudinary
       },
     },
     createdBy: {
@@ -27,8 +38,8 @@ const companySchema = new Schema(
     },
   },
   { timestamps: true }
-);
+)
 
-companySchema.plugin(mongooseAggregatePaginate);
+companySchema.plugin(mongooseAggregatePaginate)
 
-export const Company = mongoose.model("Company", companySchema);
+export const Company = mongoose.model("Company", companySchema)

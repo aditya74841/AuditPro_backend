@@ -11,7 +11,7 @@ import {
   getStaticFilePath,
   removeLocalFile,
 } from "../utils/helpers.js"
-
+import cloudinary, { deleteFromCloudinary } from "../utils/cloudniary.js"
 import { Store } from "../models/store.model.js"
 import mongoose from "mongoose"
 
@@ -213,84 +213,135 @@ const getStoreById = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, store, "Store Fetched By Id Successfully"))
 })
-
 const deleteStore = asyncHandler(async (req, res) => {
-  const { storeId } = req.params
+  const { storeId } = req.params;
+
   if (!storeId) {
-    throw new ApiError(404, "Store Id is required")
+    throw new ApiError(404, "Store ID is required");
+  }
+
+  const store = await Store.findById(storeId);
+  if (!store) {
+    throw new ApiError(404, "No store found");
+  }
+
+  // Delete logo from Cloudinary if exists
+  if (store.logo?.public_id) {
+    try {
+      await deleteFromCloudinary(store.logo.public_id);
+    } catch (cloudErr) {
+      console.error("Cloudinary deletion error:", cloudErr.message);
+      // Optionally: you can throw an error or just log and proceed
+    }
+  }
+
+  const deletedStore = await store.deleteOne();
+  if (!deletedStore) {
+    throw new ApiError(500, "Something went wrong while deleting store");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, deletedStore, "Store deleted successfully")
+  );
+});
+
+// const updateStoreLogo = asyncHandler(async (req, res) => {
+//   // Check if user has uploaded an avatar
+//   const { storeId } = req.params
+//   // console.log("checking the logo Url ")
+
+//   if (!req.file?.filename) {
+//     throw new ApiError(400, "Logo image is required")
+//   }
+
+//   // get avatar file system url and local path
+//   const logoUrl = getStaticFilePath(req, req.file?.filename)
+//   const logoLocalPath = getLocalPath(req.file?.filename)
+
+//   const store = await Store.findById(storeId)
+
+//   let updatedLogo = await Store.findByIdAndUpdate(
+//     storeId,
+
+//     {
+//       $set: {
+//         // set the newly uploaded avatar
+//         logo: {
+//           url: logoUrl,
+//           localPath: logoLocalPath,
+//         },
+//       },
+//     },
+//     { new: true }
+//   )
+
+//   // remove the old avatar
+//   removeLocalFile(store.logo.localPath)
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
+// })
+
+const updateStoreLogo = asyncHandler(async (req, res) => {
+  const { storeId } = req.params
+
+  if (!req.file) {
+    throw new ApiError(400, "Logo image is required")
   }
 
   const store = await Store.findById(storeId)
   if (!store) {
-    throw new ApiError(500, "No store found")
+    throw new ApiError(404, "Store not found")
   }
 
-  const deletedStore = await store.deleteOne()
+  // Upload to Cloudinary
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "audit-store-logos", // optional Cloudinary folder
+    resource_type: "image",
+  })
 
-  if (!deletedStore) {
-    throw new ApiError(500, "Something went worng while deleting store")
+  // Delete old logo from Cloudinary if it exists
+  if (store.logo?.public_id) {
+    await cloudinary.uploader.destroy(store.logo.public_id)
   }
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, deletedStore, "Store Deleted Successfully"))
-})
-
-const updateStoreLogo = asyncHandler(async (req, res) => {
-  // Check if user has uploaded an avatar
-  const { storeId } = req.params
-  console.log("checking the logo Url ")
-
-  if (!req.file?.filename) {
-    throw new ApiError(400, "Logo image is required")
-  }
-
-  // get avatar file system url and local path
-  const logoUrl = getStaticFilePath(req, req.file?.filename)
-  const logoLocalPath = getLocalPath(req.file?.filename)
-
-  const store = await Store.findById(storeId)
-
-  let updatedLogo = await Store.findByIdAndUpdate(
+  // Update store with new logo info
+  const updatedStore = await Store.findByIdAndUpdate(
     storeId,
-
     {
       $set: {
-        // set the newly uploaded avatar
         logo: {
-          url: logoUrl,
-          localPath: logoLocalPath,
+          url: result.secure_url,
+          public_id: result.public_id,
         },
       },
     },
     { new: true }
   )
 
-  // remove the old avatar
-  removeLocalFile(store.logo.localPath)
-
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
+    .json(new ApiResponse(200, updatedStore, "Logo updated successfully"))
 })
 
 const getStoreName = asyncHandler(async (req, res) => {
-  const companyId = req.user?.companyId;
+  const companyId = req.user?.companyId
 
   if (!companyId) {
-    throw new ApiError(409, "Please select the company", []);
+    throw new ApiError(409, "Please select the company", [])
   }
 
-  const stores = await Store.find({ company: companyId }).select("_id name");
+  const stores = await Store.find({ company: companyId }).select("_id name")
 
   const formattedStores = stores.map((store) => ({
     value: store._id,
     label: store.name,
-  }));
+  }))
 
   return res
     .status(200)
-    .json(new ApiResponse(200, formattedStores, "Stores fetched successfully"));
+    .json(new ApiResponse(200, formattedStores, "Stores fetched successfully"))
 })
 
 export {

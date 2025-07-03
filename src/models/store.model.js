@@ -8,14 +8,25 @@ const storeSchema = new Schema(
       unique: [true, "Store Must be unique"],
       default: "",
     },
+    // logo: {
+    //   type: {
+    //     url: String,
+    //     localPath: String,
+    //   },
+    //   default: {
+    //     url: `https://via.placeholder.com/200x200.png`,
+    //     localPath: "",
+    //   },
+    // },
     logo: {
-      type: {
-        url: String,
-        localPath: String,
+      url: {
+        type: String,
+        required: true,
+        default: "https://via.placeholder.com/200x200.png",
       },
-      default: {
-        url: `https://via.placeholder.com/200x200.png`,
-        localPath: "",
+      public_id: {
+        type: String,
+        default: "",
       },
     },
     company: {

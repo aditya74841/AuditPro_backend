@@ -177,27 +177,32 @@ const getAuditQuestionById = asyncHandler(async (req, res) => {
     )
 })
 
-
 const toggleIsPublished = asyncHandler(async (req, res) => {
-  const { auditQuestionId } = req.params;
+  const { auditQuestionId } = req.params
 
   // Find the audit question by ID
-  const auditQuestion = await AuditQuestion.findById(auditQuestionId);
+  const auditQuestion = await AuditQuestion.findById(auditQuestionId)
 
   if (!auditQuestion) {
-    throw new ApiError(404, "No Question found");
+    throw new ApiError(404, "No Question found")
   }
 
   // Toggle the isPublished value
-  auditQuestion.isPublished = !auditQuestion.isPublished;
+  auditQuestion.isPublished = !auditQuestion.isPublished
 
   // Save the updated document
-  await auditQuestion.save();
+  await auditQuestion.save()
 
-  return res.status(200).json(
-    new ApiResponse(200, auditQuestion, "isPublished status toggled successfully")
-  );
-});
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        auditQuestion,
+        "isPublished status toggled successfully"
+      )
+    )
+})
 const updateAuditQustionName = asyncHandler(async (req, res) => {
   const { name, storeId, isPublished } = req.body
   if (!name) {
@@ -258,7 +263,6 @@ const createOptions = asyncHandler(async (req, res) => {
   } = req.body
 
   const { auditQuestionId } = req.params
-
 
   // console.log("The response options is ",responseOption )
 
@@ -368,6 +372,7 @@ const getAuditResponse = asyncHandler(async (req, res) => {
     })
   )
 
+  // console.log("the paginated options",paginatedOptions)
   return res
     .status(201)
     .json(
@@ -392,7 +397,6 @@ const updateOptions = asyncHandler(async (req, res) => {
   } = req.body
 
   const { auditQuestionId, optionId } = req.params
-
 
   let parsedOptions = []
   if (typeof responseOption === "string" && responseOption.trim()) {
@@ -554,5 +558,5 @@ export {
   assignAuditToStaff,
   getQuestionBasedonStaff,
   startAudting,
-  toggleIsPublished
+  toggleIsPublished,
 }

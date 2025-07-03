@@ -12,6 +12,7 @@ import {
   removeLocalFile,
 } from "../utils/helpers.js"
 
+import cloudinary, { deleteFromCloudinary } from "../utils/cloudniary.js"
 import { Company } from "../models/company.model.js"
 
 const createCompany = asyncHandler(async (req, res) => {
@@ -105,70 +106,126 @@ const getCompanyById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, company, "Company Fetched By Id Successfully"))
 })
 
+
 const deleteCompany = asyncHandler(async (req, res) => {
-  const { companyId } = req.params
+  const { companyId } = req.params;
 
   if (!companyId) {
-    throw new ApiError(404, "Company Id is required")
+    throw new ApiError(404, "Company ID is required");
   }
 
-  const company = await Company.findById(companyId)
+  const company = await Company.findById(companyId);
   if (!company) {
-    throw new ApiError(404, "No company found")
+    throw new ApiError(404, "No company found");
   }
 
-  // If company has a logo, delete it from local storage
-  if (company.logo && company.logo.localPath) {
-    removeLocalFile(company.logo.localPath)
+  // Delete logo from local storage if exists
+  if (company.logo?.localPath) {
+    try {
+      removeLocalFile(company.logo.localPath);
+    } catch (err) {
+      console.error("Failed to delete local logo:", err.message);
+    }
   }
 
-  const deletedCompany = await company.deleteOne()
+  // Delete logo from Cloudinary if exists
+  if (company.logo?.public_id) {
+    try {
+      await deleteFromCloudinary(company.logo.public_id);
+    } catch (err) {
+      console.error("Failed to delete logo from Cloudinary:", err.message);
+    }
+  }
+
+  const deletedCompany = await company.deleteOne();
 
   if (!deletedCompany) {
-    throw new ApiError(500, "Something went wrong while deleting company")
+    throw new ApiError(500, "Something went wrong while deleting company");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, deletedCompany, "Company deleted successfully"))
-})
+    .json(new ApiResponse(200, deletedCompany, "Company deleted successfully"));
+});
+
+// const updateCompanyLogo = asyncHandler(async (req, res) => {
+//   // Check if user has uploaded an avatar
+//   const { companyId } = req.params
+
+//   if (!req.file?.filename) {
+//     throw new ApiError(400, "Logo image is required")
+//   }
+
+//   // get avatar file system url and local path
+//   const logoUrl = getStaticFilePath(req, req.file?.filename)
+//   const logoLocalPath = getLocalPath(req.file?.filename)
+
+//   const company = await Company.findById(companyId)
+
+//   let updatedLogo = await Company.findByIdAndUpdate(
+//     companyId,
+
+//     {
+//       $set: {
+//         // set the newly uploaded avatar
+//         logo: {
+//           url: logoUrl,
+//           localPath: logoLocalPath,
+//         },
+//       },
+//     },
+//     { new: true }
+//   )
+
+//   // remove the old avatar
+//   removeLocalFile(company.logo.localPath)
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
+// })
+
+
 
 const updateCompanyLogo = asyncHandler(async (req, res) => {
-  // Check if user has uploaded an avatar
-  const { companyId } = req.params
+  const { companyId } = req.params;
 
-  if (!req.file?.filename) {
-    throw new ApiError(400, "Logo image is required")
+  if (!req.file) {
+    throw new ApiError(400, "Logo image is required");
   }
 
-  // get avatar file system url and local path
-  const logoUrl = getStaticFilePath(req, req.file?.filename)
-  const logoLocalPath = getLocalPath(req.file?.filename)
+  const company = await Company.findById(companyId);
+  if (!company) throw new ApiError(404, "Company not found");
 
-  const company = await Company.findById(companyId)
+  // Upload to Cloudinary
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "audit-companies", // optional folder
+    resource_type: "image",
+  });
 
-  let updatedLogo = await Company.findByIdAndUpdate(
+  // Remove old logo from Cloudinary (if it exists)
+  if (company.logo?.public_id) {
+    await cloudinary.uploader.destroy(company.logo.public_id);
+  }
+
+  // Update company with new logo data
+  const updatedCompany = await Company.findByIdAndUpdate(
     companyId,
-
     {
       $set: {
-        // set the newly uploaded avatar
         logo: {
-          url: logoUrl,
-          localPath: logoLocalPath,
+          url: result.secure_url,
+          public_id: result.public_id,
         },
       },
     },
     { new: true }
-  )
+  );
 
-  // remove the old avatar
-  removeLocalFile(company.logo.localPath)
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, updatedLogo, "Logo updated successfully"))
-})
+  return res.status(200).json(
+    new ApiResponse(200, updatedCompany, "Logo updated successfully")
+  );
+});
 
 const getCompaniesForUser = asyncHandler(async (req, res) => {
   const userId = req.user._id;
