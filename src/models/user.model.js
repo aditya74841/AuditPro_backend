@@ -66,10 +66,12 @@ const userSchema = new Schema(
       type: {
         url: String,
         localPath: String,
+        public_id: String, // for cloudinary deletion
       },
       default: {
         url: `https://via.placeholder.com/200x200.png`,
         localPath: "",
+        public_id: "",
       },
     },
     isEmailVerified: {

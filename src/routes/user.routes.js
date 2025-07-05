@@ -110,7 +110,13 @@ router
 
 router.route("/register-user-staff").post(verifyJWT, registerUserStaff);
 
-
+router
+  .route("/avatar")
+  .patch(
+    verifyJWT,
+    upload.single("avatar"),
+    updateUserAvatar
+  );
 
 router
   .route("/update-user/:userId")

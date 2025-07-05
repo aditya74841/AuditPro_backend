@@ -20,6 +20,7 @@ import {
 } from "../utils/mail.js"
 import { Store } from "../models/store.model.js"
 import mongoose from "mongoose"
+import cloudinary from "../utils/cloudniary.js"
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -610,7 +611,6 @@ const assignRole = asyncHandler(async (req, res) => {
 })
 
 const updateUser = asyncHandler(async (req, res) => {
-  console.log("The Update User")
   const { userId } = req.params
   const { name, email, phoneNumber } = req.body
   const user = await User.findById(userId)
@@ -635,40 +635,50 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
+
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  // Check if user has uploaded an avatar
-  if (!req.file?.filename) {
-    throw new ApiError(400, "Avatar image is required")
+  if (!req.file) {
+    throw new ApiError(400, "Avatar image is required");
   }
 
-  // get avatar file system url and local path
-  const avatarUrl = getStaticFilePath(req, req.file?.filename)
-  const avatarLocalPath = getLocalPath(req.file?.filename)
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
-  const user = await User.findById(req.user._id)
+  // Upload new avatar to Cloudinary
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "audit-user-avatars",
+    resource_type: "image",
+  });
 
-  let updatedUser = await User.findByIdAndUpdate(
+  // Delete previous avatar from Cloudinary if it exists
+  if (user.avatar?.public_id) {
+    await cloudinary.uploader.destroy(user.avatar.public_id);
+  }
+
+  // Optionally remove local file after upload
+  removeLocalFile(req.file.path);
+
+  // Update user with new avatar
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-
     {
       $set: {
-        // set the newly uploaded avatar
         avatar: {
-          url: avatarUrl,
-          localPath: avatarLocalPath,
+          url: result.secure_url,
+          public_id: result.public_id,
+          localPath: "", // no longer needed, just set empty or remove this field
         },
       },
     },
     { new: true }
-  ).select("-password")
-
-  // remove the old avatar
-  removeLocalFile(user.avatar.localPath)
+  ).select("-password");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"))
-})
+    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
+});
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body
