@@ -1,5 +1,5 @@
-import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import mongoose, { Schema } from "mongoose"
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"
 
 const auditResponseSchema = new Schema(
   {
@@ -17,11 +17,11 @@ const auditResponseSchema = new Schema(
           file: {
             type: {
               url: String,
-              localPath: String,
+              public_id: String,
             },
             default: {
               url: null,
-              localPath: null,
+              public_id: null,
             },
           },
         },
@@ -34,11 +34,11 @@ const auditResponseSchema = new Schema(
           photo: {
             type: {
               url: String,
-              localPath: String,
+              public_id: String,
             },
             default: {
               url: null,
-              localPath: null,
+              public_id: null,
             },
           },
         },
@@ -49,11 +49,11 @@ const auditResponseSchema = new Schema(
     video: {
       type: {
         url: String,
-        localPath: String,
+        public_id: String,
       },
       default: {
         url: null,
-        localPath: null,
+        public_id: null,
       },
     },
 
@@ -82,10 +82,10 @@ const auditResponseSchema = new Schema(
     },
   },
   { timestamps: true }
-);
-auditResponseSchema.plugin(mongooseAggregatePaginate);
+)
+auditResponseSchema.plugin(mongooseAggregatePaginate)
 
 export const AuditResponse = mongoose.model(
   "AuditResponse",
   auditResponseSchema
-);
+)

@@ -66,6 +66,10 @@ const createAuditQuestionName = asyncHandler(async (req, res) => {
 const getAuditQuestion = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10 } = req.query
 
+  if (!req.user.companyId) {
+    throw new ApiError(404, "You are not allowed")
+  }
+
   const auditAggregate = AuditQuestion.aggregate([
     {
       $match: { company: req.user.companyId },
