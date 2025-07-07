@@ -75,10 +75,6 @@ import mongoose from "mongoose"
 //     )
 // })
 
-
-
-
-
 // const getResponse = asyncHandler(async (req, res) => {
 //   let allResponse = null
 //   // const {  cafe=null } = req.body;
@@ -108,9 +104,6 @@ import mongoose from "mongoose"
 //     )
 // })
 
-
-
-
 const submitResponse = asyncHandler(async (req, res) => {
   // console.log("Checking the submit response controller");
 
@@ -120,16 +113,28 @@ const submitResponse = asyncHandler(async (req, res) => {
     score,
     store,
     message,
+    optionId,
     auditQuestionId,
-  } = req.body;
+  } = req.body
+
+  console.log(
+    "the data came from",
+    questions,
+    auditresponse,
+    score,
+    store,
+    message,
+    optionId,
+    auditQuestionId
+  )
 
   if (!req.user || !req.user._id) {
-    throw new ApiError(401, "Unauthorized");
+    throw new ApiError(401, "Unauthorized")
   }
 
-  const files = [];
-  const photos = [];
-  let video = { url: null, public_id: null };
+  const files = []
+  const photos = []
+  let video = { url: null, public_id: null }
 
   // ✅ Upload files
   if (req.files?.files?.length > 0) {
@@ -137,14 +142,14 @@ const submitResponse = asyncHandler(async (req, res) => {
       const result = await cloudinary.uploader.upload(file.path, {
         folder: "audit-files",
         resource_type: "auto",
-      });
+      })
 
       files.push({
         file: {
           url: result.secure_url,
           public_id: result.public_id,
         },
-      });
+      })
     }
   }
 
@@ -154,41 +159,42 @@ const submitResponse = asyncHandler(async (req, res) => {
       const result = await cloudinary.uploader.upload(photo.path, {
         folder: "audit-photos",
         resource_type: "image",
-      });
+      })
 
       photos.push({
         photo: {
           url: result.secure_url,
           public_id: result.public_id,
         },
-      });
+      })
     }
   }
 
   // ✅ Upload video
   if (req.files?.video?.length > 0) {
-    const videoFile = req.files.video[0];
+    const videoFile = req.files.video[0]
 
     const result = await cloudinary.uploader.upload(videoFile.path, {
       folder: "audit-videos",
       resource_type: "video",
-    });
+    })
 
     video = {
       url: result.secure_url,
       public_id: result.public_id,
-    };
+    }
   }
 
   // ✅ Convert store to ObjectId if valid
-  let storeObjectId = undefined;
+  let storeObjectId = undefined
   if (store && mongoose.Types.ObjectId.isValid(store)) {
-    storeObjectId = new mongoose.Types.ObjectId(store);
+    storeObjectId = new mongoose.Types.ObjectId(store)
   }
 
   // ✅ Save to DB
   const auditResponse = await AuditResponse.create({
     questions,
+    optionId,
     auditresponse,
     files,
     photos,
@@ -198,28 +204,29 @@ const submitResponse = asyncHandler(async (req, res) => {
     auditQuestionId,
     store: storeObjectId, // will be undefined if not valid
     createdBy: req.user._id,
-  });
+  })
 
-  return res.status(201).json(
-    new ApiResponse(201, auditResponse, "Audit response submitted successfully")
-  );
-});
-
-
-
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        auditResponse,
+        "Audit response submitted successfully"
+      )
+    )
+})
 
 const getResponse = asyncHandler(async (req, res) => {
-
   if (!req.user.companyId) {
     throw new ApiError(404, "You are not allowed")
   }
 
   let auditQuestion = await AuditQuestion.find({ company: req.user.companyId })
 
-   if (!auditQuestion.length) {
-    throw new ApiError(404, "No question found");
+  if (!auditQuestion.length) {
+    throw new ApiError(404, "No question found")
   }
- 
 
   return res
     .status(200)
@@ -227,20 +234,6 @@ const getResponse = asyncHandler(async (req, res) => {
       new ApiResponse(200, auditQuestion, "Audit Question fetched successfully")
     )
 })
-
-// const getResponseById = asyncHandler(async (req, res) => {
-//   const { responseId } = req.params;
-
-//   let response = null;
-
-//   response = await AuditResponse.findById(responseId);
-
-//   return res
-//     .status(200)
-//     .json(
-//       new ApiResponse(200, response, "Audit Response fetched successfully")
-//     );
-// });
 
 const getResponseById = asyncHandler(async (req, res) => {
   const auditQuestionIds = req.params.responseId
@@ -262,4 +255,45 @@ const getResponseById = asyncHandler(async (req, res) => {
     )
 })
 
-export { submitResponse, getResponse, getResponseById }
+const getResponseByAuditId = asyncHandler(async (req, res) => {
+  // console.log("Checking")
+  const auditId = req.params.auditId
+  const { date } = req.query
+
+  console.log("The date is ", date)
+
+  if (!mongoose.Types.ObjectId.isValid(auditId)) {
+    throw new ApiError(400, "Invalid Audit ID")
+  }
+
+  // Get start and end of the day (either today or from query)
+  const targetDate = date ? new Date(date) : new Date()
+
+  const startOfDay = new Date(targetDate)
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const endOfDay = new Date(targetDate)
+  endOfDay.setHours(23, 59, 59, 999)
+
+  const responses = await AuditResponse.find({
+    auditQuestionId: auditId,
+    createdAt: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+  }).populate("auditQuestionId store createdBy") // Optional: populate fields
+
+  if (!responses.length) {
+    throw new ApiError(
+      404,
+      "No audit responses found for the given audit and date"
+    )
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, responses, "Audit responses fetched successfully")
+    )
+})
+export { submitResponse, getResponse, getResponseById, getResponseByAuditId }

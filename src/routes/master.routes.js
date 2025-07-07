@@ -8,6 +8,7 @@ import { upload } from "../middlewares/multer.middlewares.js"
 import { mongoIdPathVariableValidator } from "../validators/common/mongodb.validators.js"
 import {
   getResponse,
+  getResponseByAuditId,
   getResponseById,
   submitResponse,
 } from "../controllers/audit/auditresponse.controller.js"
@@ -107,5 +108,6 @@ router.route("/audit-response").post(
 router.route("/get-audit-response").get(verifyJWT, getResponse)
 
 router.route("/audit-response/:responseId").get(verifyJWT, getResponseById)
+router.route("/audit-response-by-date/:auditId").get(verifyJWT, getResponseByAuditId)
 
 export default router

@@ -65,6 +65,11 @@ const auditResponseSchema = new Schema(
       type: String,
       default: "",
     },
+    optionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AuditQuestion",
+      default: null,
+    },
     auditQuestionId: {
       type: Schema.Types.ObjectId,
       ref: "AuditQuestion",
