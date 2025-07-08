@@ -117,17 +117,6 @@ const submitResponse = asyncHandler(async (req, res) => {
     auditQuestionId,
   } = req.body
 
-  console.log(
-    "the data came from",
-    questions,
-    auditresponse,
-    score,
-    store,
-    message,
-    optionId,
-    auditQuestionId
-  )
-
   if (!req.user || !req.user._id) {
     throw new ApiError(401, "Unauthorized")
   }
@@ -136,11 +125,13 @@ const submitResponse = asyncHandler(async (req, res) => {
   const photos = []
   let video = { url: null, public_id: null }
 
+  // console.log(req.files.files)
+
   // ✅ Upload files
   if (req.files?.files?.length > 0) {
     for (const file of req.files.files) {
       const result = await cloudinary.uploader.upload(file.path, {
-        folder: "audit-files",
+        folder: "audit/audit-files",
         resource_type: "auto",
       })
 
@@ -157,7 +148,7 @@ const submitResponse = asyncHandler(async (req, res) => {
   if (req.files?.photos?.length > 0) {
     for (const photo of req.files.photos) {
       const result = await cloudinary.uploader.upload(photo.path, {
-        folder: "audit-photos",
+        folder: "audit/audit-photos",
         resource_type: "image",
       })
 
@@ -175,7 +166,7 @@ const submitResponse = asyncHandler(async (req, res) => {
     const videoFile = req.files.video[0]
 
     const result = await cloudinary.uploader.upload(videoFile.path, {
-      folder: "audit-videos",
+      folder: "audit/audit-videos",
       resource_type: "video",
     })
 
@@ -283,12 +274,12 @@ const getResponseByAuditId = asyncHandler(async (req, res) => {
     },
   }).populate("auditQuestionId store createdBy") // Optional: populate fields
 
-  if (!responses.length) {
-    throw new ApiError(
-      404,
-      "No audit responses found for the given audit and date"
-    )
-  }
+  // if (!responses.length) {
+  //   throw new ApiError(
+  //     404,
+  //     "No audit responses found for the given audit and date"
+  //   )
+  // }
 
   return res
     .status(200)
