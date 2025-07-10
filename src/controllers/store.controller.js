@@ -107,6 +107,9 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Please select the company", [])
   }
 
+  // Get the total count of all stores
+  const totalStoreCount = await Store.countDocuments({ company: companyId });
+
   const storeAggregate = Store.aggregate([
     {
       $match: {
@@ -161,9 +164,15 @@ const getStoreBasedOnCompany = asyncHandler(async (req, res) => {
     })
   )
 
+  // Add the total store count to the response
+  const responseData = {
+    ...paginatedOptions,
+    allStoreCount: totalStoreCount,
+  };
+
   return res
     .status(200)
-    .json(new ApiResponse(200, paginatedOptions, "Stores fetched successfully"))
+    .json(new ApiResponse(200, responseData, "Stores fetched successfully"))
 })
 
 // const getStore = asyncHandler(async (req, res) => {
@@ -214,36 +223,36 @@ const getStoreById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, store, "Store Fetched By Id Successfully"))
 })
 const deleteStore = asyncHandler(async (req, res) => {
-  const { storeId } = req.params;
+  const { storeId } = req.params
 
   if (!storeId) {
-    throw new ApiError(404, "Store ID is required");
+    throw new ApiError(404, "Store ID is required")
   }
 
-  const store = await Store.findById(storeId);
+  const store = await Store.findById(storeId)
   if (!store) {
-    throw new ApiError(404, "No store found");
+    throw new ApiError(404, "No store found")
   }
 
   // Delete logo from Cloudinary if exists
   if (store.logo?.public_id) {
     try {
-      await deleteFromCloudinary(store.logo.public_id);
+      await deleteFromCloudinary(store.logo.public_id)
     } catch (cloudErr) {
-      console.error("Cloudinary deletion error:", cloudErr.message);
+      console.error("Cloudinary deletion error:", cloudErr.message)
       // Optionally: you can throw an error or just log and proceed
     }
   }
 
-  const deletedStore = await store.deleteOne();
+  const deletedStore = await store.deleteOne()
   if (!deletedStore) {
-    throw new ApiError(500, "Something went wrong while deleting store");
+    throw new ApiError(500, "Something went wrong while deleting store")
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, deletedStore, "Store deleted successfully")
-  );
-});
+  return res
+    .status(200)
+    .json(new ApiResponse(200, deletedStore, "Store deleted successfully"))
+})
 
 // const updateStoreLogo = asyncHandler(async (req, res) => {
 //   // Check if user has uploaded an avatar

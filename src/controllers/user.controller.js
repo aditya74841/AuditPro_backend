@@ -291,6 +291,7 @@ const getUserBasedOnCompany = asyncHandler(async (req, res) => {
   if (!companyId) {
     throw new ApiError(409, "Please Select the Company", [])
   }
+  const totalUserCount = await User.countDocuments({ companyId: companyId })
 
   const companyAggregate = User.aggregate([
     { $match: { companyId: new mongoose.Types.ObjectId(companyId) } },
@@ -313,9 +314,14 @@ const getUserBasedOnCompany = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No users found for the specified company", [])
   }
 
+  const responseData = {
+    ...paginatedOptions,
+    allUserCount: totalUserCount,
+  }
+
   return res
     .status(200)
-    .json(new ApiResponse(200, paginatedOptions, "Users fetched successfully"))
+    .json(new ApiResponse(200, responseData, "Users fetched successfully"))
 })
 
 const getUser = asyncHandler(async (req, res) => {
@@ -341,7 +347,6 @@ const getUser = asyncHandler(async (req, res) => {
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
-  console.log(req.user._id)
   await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -635,30 +640,29 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
-
 const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!req.file) {
-    throw new ApiError(400, "Avatar image is required");
+    throw new ApiError(400, "Avatar image is required")
   }
 
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id)
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw new ApiError(404, "User not found")
   }
 
   // Upload new avatar to Cloudinary
   const result = await cloudinary.uploader.upload(req.file.path, {
     folder: "audit-user-avatars",
     resource_type: "image",
-  });
+  })
 
   // Delete previous avatar from Cloudinary if it exists
   if (user.avatar?.public_id) {
-    await cloudinary.uploader.destroy(user.avatar.public_id);
+    await cloudinary.uploader.destroy(user.avatar.public_id)
   }
 
   // Optionally remove local file after upload
-  removeLocalFile(req.file.path);
+  removeLocalFile(req.file.path)
 
   // Update user with new avatar
   const updatedUser = await User.findByIdAndUpdate(
@@ -673,12 +677,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password")
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
-});
+    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"))
+})
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body

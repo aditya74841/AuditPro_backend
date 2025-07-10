@@ -69,6 +69,7 @@ const getAuditQuestion = asyncHandler(async (req, res) => {
   if (!req.user.companyId) {
     throw new ApiError(404, "You are not allowed")
   }
+  const totalAuditCount = await AuditQuestion.countDocuments({ company:req.user.companyId });
 
   const auditAggregate = AuditQuestion.aggregate([
     {
@@ -161,9 +162,17 @@ const getAuditQuestion = asyncHandler(async (req, res) => {
     })
   )
 
+  const responseData = {
+    ...audits,
+    allAuditCount: totalAuditCount,
+  };
+
+
+
+
   return res
     .status(200)
-    .json(new ApiResponse(200, audits, "Audit Question Fetched successfully"))
+    .json(new ApiResponse(200, responseData, "Audit Question Fetched successfully"))
 })
 
 const getAuditQuestionById = asyncHandler(async (req, res) => {

@@ -251,7 +251,6 @@ const getResponseByAuditId = asyncHandler(async (req, res) => {
   const auditId = req.params.auditId
   const { date } = req.query
 
-  console.log("The date is ", date)
 
   if (!mongoose.Types.ObjectId.isValid(auditId)) {
     throw new ApiError(400, "Invalid Audit ID")
