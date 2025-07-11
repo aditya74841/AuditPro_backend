@@ -17,6 +17,7 @@ import userRouter from "./routes/user.routes.js";
 import masterRouter from "./routes/master.routes.js";
 import companyRouter from "./routes/company.routes.js";
 import storeRouter from "./routes/store.routes.js";
+import demoRouter from "./routes/demoRequest.routes.js"
 import { errorHandler } from "./middlewares/error.middlewares.js";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -88,6 +89,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/master", masterRouter);
 app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/store", storeRouter);
+app.use("/api/v1/demoRequest", demoRouter);
 
 app.use("/", (req, res) => {
   res.status(200).send("<h1>Server is Running Successfullyy</h1>");
