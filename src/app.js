@@ -33,7 +33,7 @@ app.use(
       "http://localhost:3001",
       "http://localhost:3002",
       "http://127.0.0.1:3000",
-      "https://auditpro-backend-woxv.onrender.com"
+      "https://audit-pro-frontend.vercel.app"
     ],
     credentials: true,
   })
