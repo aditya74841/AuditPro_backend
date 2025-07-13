@@ -34,7 +34,7 @@ app.use(
       "http://localhost:3002",
       "http://127.0.0.1:3000",
       "https://audit-pro-frontend.vercel.app",
-      "audit.iamadityaranjan.com"
+      "https://audit.iamadityaranjan.com"
     ],
     credentials: true,
   })
