@@ -93,12 +93,14 @@ app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/store", storeRouter);
 app.use("/api/v1/demoRequest", demoRouter);
 
-app.use("/", (req, res) => {
-  res.status(200).send("<h1>Server is Running Successfullyy</h1>");
-});
+
 
 app.get("/health-check", (req, res) => {
   return res.status(200).json({ success: true, message: "Server is healthy" });
+});
+
+app.use("/", (req, res) => {
+  res.status(200).send("<h1>Server is Running Successfullyy</h1>");
 });
 // Error handler
 app.use(errorHandler);
