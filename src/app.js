@@ -97,6 +97,9 @@ app.use("/", (req, res) => {
   res.status(200).send("<h1>Server is Running Successfullyy</h1>");
 });
 
+app.get("/health-check", (req, res) => {
+  return res.status(200).json({ success: true, message: "Server is healthy" });
+});
 // Error handler
 app.use(errorHandler);
 
